@@ -13,20 +13,22 @@ uint8_t I2C_PORT=0;
 static const char *TAG = "Demo-BH1750";
 
 void BH1750_task(){
-    uint16_t lux;
-    uint8_t MTime=69; //default value
-    BH1750 BH1750={0};
+    for(;;){
+        uint16_t lux;
+        uint8_t MTime=69; //default value
+        BH1750 BH1750={0};
 
-    ESP_LOGI(TAG, "BH1750 task started");
-    bh1750_init_desc(&BH1750,BH1750_ADDR_LO,I2C_PORT,SDA_PIN,SCL_PIN);
-    bh1750_power_on(&BH1750);
-    bh1750_set_measurement_time(&BH1750, MTime);
-    bh1750_set_and_measure(&BH1750, BH1750_MODE_CONTINUOUS, BH1750_RES_HIGH2);
+        ESP_LOGI(TAG, "BH1750 task started");
+        bh1750_init(&BH1750,BH1750_ADDR_LO,I2C_PORT,SDA_PIN,SCL_PIN);
+        bh1750_power_on(&BH1750);
+        bh1750_set(&BH1750, BH1750_MODE_CONTINUOUS, BH1750_RES_HIGH, MTime);
 
-    bh1750_read_measure(&BH1750,&lux);
+        bh1750_measure_and_read(&BH1750,&lux);
 
-    ESP_LOGI(TAG, "BH1750: %d", lux);
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
+        ESP_LOGI(TAG, "BH1750: %d", lux);
+        bh1750_delete();
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+    }
 }
 
 void app_main(void)

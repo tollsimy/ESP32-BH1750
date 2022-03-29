@@ -87,12 +87,13 @@ typedef struct{
   uint8_t data[2];
 } BH1750;
 
-esp_err_t bh1750_init_desc(BH1750 *BH1750, uint8_t addr, i2c_port_t port, gpio_num_t sda_gpio, gpio_num_t scl_gpio);
-void bh1750_set_measurement_time(BH1750 *BH1750, uint8_t time);
+esp_err_t bh1750_init(BH1750 *BH1750, uint8_t addr, i2c_port_t port, gpio_num_t sda_gpio, gpio_num_t scl_gpio);
+esp_err_t bh1750_delete();
 void bh1750_power_down(BH1750 *BH1750);
 void bh1750_power_on(BH1750 *BH1750);
 void bh1750_reset(BH1750 *BH1750);
-void bh1750_set_and_measure(BH1750 *BH1750, bh1750_mode_t mode, bh1750_resolution_t res);
+void bh1750_set(BH1750 *BH1750, bh1750_mode_t mode, bh1750_resolution_t res, uint8_t time);
+void bh1750_measure(BH1750 *BH1750, bh1750_mode_t mode, bh1750_resolution_t res, uint8_t time);
 void bh1750_read_measure(BH1750 *BH1750, uint16_t *level);
 void bh1750_measure_and_read(BH1750 *BH1750, uint16_t *level);
 
