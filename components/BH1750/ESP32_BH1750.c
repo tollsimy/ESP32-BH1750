@@ -28,7 +28,7 @@
  */
 
 /**
- * @file bh1750.c
+ * @file ESP32_BH1750.c
  *
  * @ingroup bh1750 ESP-IDF driver for BH1750 light sensor
  *
@@ -47,7 +47,7 @@
 #include <stdio.h>
 #include <freertos/FreeRTOS.h>
 #include <esp_log.h>
-#include "bh1750.h"
+#include "ESP32_BH1750.h"
 
 #define OPCODE_HIGH  (0x0)
 #define OPCODE_HIGH2 (0x1)
@@ -66,7 +66,7 @@
 
 #define I2C_FREQ_HZ (400000)
 
-static const char* TAG="BH1750";
+static const char* TAG="ESP32_BH1750";
 
 //Support functions
 
@@ -75,7 +75,7 @@ static const char* TAG="BH1750";
  *  @param  reg
  *  @param  value
  */
-void write8(BH1750* BH1750, uint8_t opcode) {
+static void BH1750_write8(ESP32_BH1750* BH1750, uint8_t opcode) {
     uint8_t buffer[1];
     buffer[0]=opcode;
     ESP_ERROR_CHECK(i2c_master_write_to_device(I2C_PORT, BH1750->addr, buffer, 1, 1000 / portTICK_RATE_MS));
@@ -93,7 +93,7 @@ void write8(BH1750* BH1750, uint8_t opcode) {
  * @param[in] scl_gpio GPIO pin number for SCL
  * @return `ESP_OK` on success
  */
-esp_err_t bh1750_init(BH1750 *BH1750, uint8_t addr, i2c_port_t port, gpio_num_t sda_gpio, gpio_num_t scl_gpio)
+esp_err_t BH1750_init(ESP32_BH1750 *BH1750, uint8_t addr, i2c_port_t port, gpio_num_t sda_gpio, gpio_num_t scl_gpio)
 {   
     if (addr != BH1750_ADDR_LO && addr != BH1750_ADDR_HI)
     {
@@ -117,12 +117,12 @@ esp_err_t bh1750_init(BH1750 *BH1750, uint8_t addr, i2c_port_t port, gpio_num_t 
 
     ESP_ERROR_CHECK(i2c_driver_install(I2C_PORT, I2C_MODE_MASTER, 0, 0, 0));
     
-    bh1750_measure(BH1750,BH1750->mode,BH1750->res,BH1750->MTime);
+    BH1750_measure(BH1750,BH1750->mode,BH1750->res,BH1750->MTime);
     
     return ESP_OK;
 }
 
-esp_err_t bh1750_delete(){
+esp_err_t BH1750_delete(){
     ESP_ERROR_CHECK(i2c_driver_delete(I2C_PORT));
     return ESP_OK;
 }
@@ -133,9 +133,9 @@ esp_err_t bh1750_delete(){
  * @param ESP_BH1750 BH1750 Structure
  * 
  */
-void bh1750_power_down(BH1750 *BH1750)
+void BH1750_power_down(ESP32_BH1750 *BH1750)
 {
-    write8(BH1750, OPCODE_POWER_DOWN);
+    BH1750_write8(BH1750, OPCODE_POWER_DOWN);
 }
 
 /**
@@ -144,9 +144,9 @@ void bh1750_power_down(BH1750 *BH1750)
  * @param ESP_BH1750 BH1750 Structure
  * 
  */
-void bh1750_power_on(BH1750 *BH1750)
+void BH1750_power_on(ESP32_BH1750 *BH1750)
 {
-    write8(BH1750, OPCODE_POWER_ON);
+    BH1750_write8(BH1750, OPCODE_POWER_ON);
 }
 
 
@@ -156,9 +156,9 @@ void bh1750_power_on(BH1750 *BH1750)
  * @param ESP_BH1750 BH1750 Structure
  * 
  */
-void bh1750_reset(BH1750 *BH1750)
+void BH1750_reset(ESP32_BH1750 *BH1750)
 {
-    write8(BH1750, OPCODE_RESET);
+    BH1750_write8(BH1750, OPCODE_RESET);
 }
 
 /**
@@ -169,7 +169,7 @@ void bh1750_reset(BH1750 *BH1750)
  * @param resolution Measurement resolution
  * 
  */
-void bh1750_set(BH1750 *BH1750, bh1750_mode_t mode, bh1750_resolution_t res, uint8_t time){
+void BH1750_set(ESP32_BH1750 *BH1750, bh1750_mode_t mode, bh1750_resolution_t res, uint8_t time){
     BH1750->mode = mode;
     BH1750->res = res;
     BH1750->MTime = time;
@@ -183,7 +183,7 @@ void bh1750_set(BH1750 *BH1750, bh1750_mode_t mode, bh1750_resolution_t res, uin
  * @param resolution Measurement resolution
  * 
  */
-void bh1750_measure(BH1750 *BH1750, bh1750_mode_t mode, bh1750_resolution_t resolution, uint8_t time)
+void BH1750_measure(ESP32_BH1750 *BH1750, bh1750_mode_t mode, bh1750_resolution_t resolution, uint8_t time)
 {   
     //set measurement resolution and mode
     uint8_t opcode = mode == BH1750_MODE_CONTINUOUS ? OPCODE_CONT : OPCODE_OT;
@@ -193,13 +193,13 @@ void bh1750_measure(BH1750 *BH1750, bh1750_mode_t mode, bh1750_resolution_t reso
         case BH1750_RES_HIGH: opcode |= OPCODE_HIGH;  break;
         default:              opcode |= OPCODE_HIGH2; break;
     }
-    write8(BH1750, opcode);
+    BH1750_write8(BH1750, opcode);
 
     //set measurement time
     uint8_t MTHigh = OPCODE_MT_HI | (BH1750->MTime >> 5);
     uint8_t MTLow = OPCODE_MT_LO | (BH1750->MTime & 0x1F);
-    write8(BH1750, MTHigh);
-    write8(BH1750, MTLow);
+    BH1750_write8(BH1750, MTHigh);
+    BH1750_write8(BH1750, MTLow);
 }
 
 /**
@@ -209,7 +209,7 @@ void bh1750_measure(BH1750 *BH1750, bh1750_mode_t mode, bh1750_resolution_t reso
  * @param level Uint16_t pointer to store measured value
  * 
  */
-void bh1750_read_measure(BH1750 *BH1750, uint16_t *level){
+void BH1750_read_measure(ESP32_BH1750 *BH1750, uint16_t *level){
     uint8_t buffer[2];
     ESP_ERROR_CHECK(i2c_master_read_from_device(I2C_PORT, BH1750->addr, buffer, 2, 1000 / portTICK_RATE_MS));
 
@@ -223,17 +223,16 @@ void bh1750_read_measure(BH1750 *BH1750, uint16_t *level){
  *  bh1750_power_on() before calling again this function.
  *  @param level Uint16_t pointer to store measured value
  */
-void bh1750_measure_and_read(BH1750* BH1750, uint16_t *level) {
+void BH1750_measure_and_read(ESP32_BH1750* BH1750, uint16_t *level) {
     uint8_t buffer[2];
     double wait_time_ms=0;
 
-    //TODO:Testare se effettivamente servono le "measure()"
     if(BH1750->mode == BH1750_MODE_ONE_TIME) {
-        bh1750_power_on(BH1750);
-        bh1750_measure(BH1750,BH1750->mode,BH1750->res,BH1750->MTime);
+        BH1750_power_on(BH1750);
+        BH1750_measure(BH1750,BH1750->mode,BH1750->res,BH1750->MTime);
     }
     else if(BH1750->mode == BH1750_MODE_CONTINUOUS) {
-        bh1750_measure(BH1750,BH1750->mode,BH1750->res,BH1750->MTime);
+        BH1750_measure(BH1750,BH1750->mode,BH1750->res,BH1750->MTime);
     }
 
     switch (BH1750->res)      //measure times are a bit higher in order to archieve proper measure
@@ -253,6 +252,10 @@ void bh1750_measure_and_read(BH1750* BH1750, uint16_t *level) {
         break;
     }
 
+    //wait measure time
+    vTaskDelay(wait_time_ms/portTICK_RATE_MS);
+
+    //read
     ESP_ERROR_CHECK(i2c_master_read_from_device(I2C_PORT, BH1750->addr, buffer, 2, 1000 / portTICK_RATE_MS));
 
     *level = buffer[0] << 8 | buffer[1];

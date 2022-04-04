@@ -28,12 +28,12 @@
  */
 
 /**
- * @file bh1750.h
+ * @file ESP32_BH1750.h
  *
- * @defgroup bh1750 bh1750
+ * @defgroup BH1750 BH1750
  * @{
  *
- * ESP-IDF driver for BH1750 light sensor
+ * ESP-IDF driver for ESP32_BH1750 light sensor
  *
  * Datasheet: ROHM Semiconductor bh1750fvi-e.pdf
  *
@@ -44,8 +44,8 @@
  * Copyright (c) 2022 Simone Tollardo <simonetollardo@gmail.com>
  * BSD Licensed as described in the file LICENSE
  */
-#ifndef __BH1750_H__
-#define __BH1750_H__
+#ifndef __ESP32_BH1750_H__
+#define __ESP32_BH1750_H__
 
 #include <stdint.h>
 #include "driver/i2c.h"
@@ -85,16 +85,16 @@ typedef struct{
   uint8_t addr;
   uint8_t MTime;
   uint8_t data[2];
-} BH1750;
+} ESP32_BH1750;
 
-esp_err_t bh1750_init(BH1750 *BH1750, uint8_t addr, i2c_port_t port, gpio_num_t sda_gpio, gpio_num_t scl_gpio);
-esp_err_t bh1750_delete();
-void bh1750_power_down(BH1750 *BH1750);
-void bh1750_power_on(BH1750 *BH1750);
-void bh1750_reset(BH1750 *BH1750);
-void bh1750_set(BH1750 *BH1750, bh1750_mode_t mode, bh1750_resolution_t res, uint8_t time);
-void bh1750_measure(BH1750 *BH1750, bh1750_mode_t mode, bh1750_resolution_t res, uint8_t time);
-void bh1750_read_measure(BH1750 *BH1750, uint16_t *level);
-void bh1750_measure_and_read(BH1750 *BH1750, uint16_t *level);
+esp_err_t BH1750_init(ESP32_BH1750 *ESP32_BH1750, uint8_t addr, i2c_port_t port, gpio_num_t sda_gpio, gpio_num_t scl_gpio);
+esp_err_t BH1750_delete();
+void BH1750_power_down(ESP32_BH1750 *ESP32_BH1750);
+void BH1750_power_on(ESP32_BH1750 *ESP32_BH1750);
+void BH1750_reset(ESP32_BH1750 *ESP32_BH1750);
+void BH1750_set(ESP32_BH1750 *ESP32_BH1750, bh1750_mode_t mode, bh1750_resolution_t res, uint8_t time);
+void BH1750_measure(ESP32_BH1750 *ESP32_BH1750, bh1750_mode_t mode, bh1750_resolution_t res, uint8_t time);
+void BH1750_read_measure(ESP32_BH1750 *ESP32_BH1750, uint16_t *level);
+void BH1750_measure_and_read(ESP32_BH1750 *ESP32_BH1750, uint16_t *level);
 
 #endif /* __BH1750_H__ */
