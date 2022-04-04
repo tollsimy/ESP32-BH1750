@@ -54,9 +54,9 @@
 #define BH1750_ADDR_LO (0x23) //!< I2C address when ADDR pin floating/low
 #define BH1750_ADDR_HI (0x5c) //!< I2C address when ADDR pin high
 
-extern uint8_t SDA_PIN;
-extern uint8_t SCL_PIN;
-extern uint8_t I2C_PORT;
+extern uint8_t BH1750_SDA_PIN;
+extern uint8_t BH1750_SCL_PIN;
+extern uint8_t BH1750_I2C_PORT;
 
 /**
  * Measurement mode

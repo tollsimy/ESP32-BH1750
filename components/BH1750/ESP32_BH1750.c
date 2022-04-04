@@ -78,7 +78,7 @@ static const char* TAG="ESP32_BH1750";
 static void BH1750_write8(ESP32_BH1750* BH1750, uint8_t opcode) {
     uint8_t buffer[1];
     buffer[0]=opcode;
-    ESP_ERROR_CHECK(i2c_master_write_to_device(I2C_PORT, BH1750->addr, buffer, 1, 1000 / portTICK_RATE_MS));
+    ESP_ERROR_CHECK(i2c_master_write_to_device(BH1750_I2C_PORT, BH1750->addr, buffer, 1, 1000 / portTICK_RATE_MS));
 }
 
 //Public functions
@@ -107,15 +107,15 @@ esp_err_t BH1750_init(ESP32_BH1750 *BH1750, uint8_t addr, i2c_port_t port, gpio_
     BH1750->MTime = MTIME_DEFAULT;
 
     BH1750->conf.mode = I2C_MODE_MASTER;
-    BH1750->conf.sda_io_num = SDA_PIN;
-    BH1750->conf.scl_io_num = SCL_PIN;
+    BH1750->conf.sda_io_num = BH1750_SDA_PIN;
+    BH1750->conf.scl_io_num = BH1750_SCL_PIN;
     BH1750->conf.sda_pullup_en = GPIO_PULLUP_DISABLE;     //disable if you have external pullup
     BH1750->conf.scl_pullup_en = GPIO_PULLUP_DISABLE;
     BH1750->conf.master.clk_speed = 400000;               //I2C Full Speed
 
-    ESP_ERROR_CHECK(i2c_param_config(I2C_PORT, &(BH1750->conf))); //set I2C Config
+    ESP_ERROR_CHECK(i2c_param_config(BH1750_I2C_PORT, &(BH1750->conf))); //set I2C Config
 
-    ESP_ERROR_CHECK(i2c_driver_install(I2C_PORT, I2C_MODE_MASTER, 0, 0, 0));
+    ESP_ERROR_CHECK(i2c_driver_install(BH1750_I2C_PORT, I2C_MODE_MASTER, 0, 0, 0));
     
     BH1750_measure(BH1750,BH1750->mode,BH1750->res,BH1750->MTime);
     
@@ -123,7 +123,7 @@ esp_err_t BH1750_init(ESP32_BH1750 *BH1750, uint8_t addr, i2c_port_t port, gpio_
 }
 
 esp_err_t BH1750_delete(){
-    ESP_ERROR_CHECK(i2c_driver_delete(I2C_PORT));
+    ESP_ERROR_CHECK(i2c_driver_delete(BH1750_I2C_PORT));
     return ESP_OK;
 }
 
@@ -211,7 +211,7 @@ void BH1750_measure(ESP32_BH1750 *BH1750, bh1750_mode_t mode, bh1750_resolution_
  */
 void BH1750_read_measure(ESP32_BH1750 *BH1750, uint16_t *level){
     uint8_t buffer[2];
-    ESP_ERROR_CHECK(i2c_master_read_from_device(I2C_PORT, BH1750->addr, buffer, 2, 1000 / portTICK_RATE_MS));
+    ESP_ERROR_CHECK(i2c_master_read_from_device(BH1750_I2C_PORT, BH1750->addr, buffer, 2, 1000 / portTICK_RATE_MS));
 
     *level = buffer[0] << 8 | buffer[1];
     *level = (*level * 10) / 12; // convert to LUX
@@ -256,7 +256,7 @@ void BH1750_measure_and_read(ESP32_BH1750* BH1750, uint16_t *level) {
     vTaskDelay(wait_time_ms/portTICK_RATE_MS);
 
     //read
-    ESP_ERROR_CHECK(i2c_master_read_from_device(I2C_PORT, BH1750->addr, buffer, 2, 1000 / portTICK_RATE_MS));
+    ESP_ERROR_CHECK(i2c_master_read_from_device(BH1750_I2C_PORT, BH1750->addr, buffer, 2, 1000 / portTICK_RATE_MS));
 
     *level = buffer[0] << 8 | buffer[1];
     *level = (*level * 10) / 12; // convert to LUX
