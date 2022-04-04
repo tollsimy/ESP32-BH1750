@@ -93,7 +93,7 @@ static void BH1750_write8(ESP32_BH1750* BH1750, uint8_t opcode) {
  * @param[in] scl_gpio GPIO pin number for SCL
  * @return `ESP_OK` on success
  */
-esp_err_t BH1750_init(ESP32_BH1750 *BH1750, uint8_t addr, i2c_port_t port, gpio_num_t sda_gpio, gpio_num_t scl_gpio)
+esp_err_t BH1750_init(ESP32_BH1750 *BH1750, uint8_t addr)
 {   
     if (addr != BH1750_ADDR_LO && addr != BH1750_ADDR_HI)
     {

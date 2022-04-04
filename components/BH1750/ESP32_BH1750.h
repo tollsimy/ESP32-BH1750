@@ -87,7 +87,7 @@ typedef struct{
   uint8_t data[2];
 } ESP32_BH1750;
 
-esp_err_t BH1750_init(ESP32_BH1750 *ESP32_BH1750, uint8_t addr, i2c_port_t port, gpio_num_t sda_gpio, gpio_num_t scl_gpio);
+esp_err_t BH1750_init(ESP32_BH1750 *ESP32_BH1750, uint8_t addr);
 esp_err_t BH1750_delete();
 void BH1750_power_down(ESP32_BH1750 *ESP32_BH1750);
 void BH1750_power_on(ESP32_BH1750 *ESP32_BH1750);
