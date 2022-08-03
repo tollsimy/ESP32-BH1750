@@ -1,1 +1,1 @@
-idf_component_register(SRCS "ESP32_BH1750.c" INCLUDE_DIRS ".")
+idf_component_register(SRCS "ESP32_BH1750.c" INCLUDE_DIRS "." PRIV_REQUIRES driver)
