@@ -53,8 +53,12 @@
 #define OPCODE_HIGH2 (0x1)
 #define OPCODE_LOW   (0x3)
 
-#define OPCODE_CONT (0x10)
-#define OPCODE_OT   (0x20)
+#define OPCODE_CONT_H_RES (0x10)
+#define OPCODE_CONT_H_RES2 (0x11)
+#define OPCODE_CONT_L_RES (0x13)
+#define OPCODE_OT_H_RES   (0x20)
+#define OPCODE_OT_H_RES2  (0x21)
+#define OPCODE_OT_L_RES   (0x23)
 
 #define OPCODE_RESET (0x07)
 
@@ -78,7 +82,7 @@ static const char* TAG="ESP32_BH1750";
 static void BH1750_write8(ESP32_BH1750* BH1750, uint8_t opcode) {
     uint8_t buffer[1];
     buffer[0]=opcode;
-    ESP_ERROR_CHECK(i2c_master_write_to_device(BH1750_I2C_PORT, BH1750->addr, buffer, 1, 1000 / portTICK_PERIOD_MS));
+    ESP_ERROR_CHECK(i2c_master_write_to_device(BH1750->i2c_port, BH1750->addr, buffer, 1, 1000 / portTICK_PERIOD_MS));
 }
 
 //Public functions
@@ -93,38 +97,24 @@ static void BH1750_write8(ESP32_BH1750* BH1750, uint8_t opcode) {
  * @param[in] scl_gpio GPIO pin number for SCL
  * @return `ESP_OK` on success
  */
-esp_err_t BH1750_init(ESP32_BH1750 *BH1750, uint8_t addr)
+esp_err_t BH1750_init(ESP32_BH1750 *BH1750, uint8_t addr, uint8_t i2c_port)
 {   
-    if (addr != BH1750_ADDR_LO && addr != BH1750_ADDR_HI)
-    {
-        ESP_LOGE(TAG,"Invalid I2C address");
-        return ESP_ERR_INVALID_ARG;
+    if(!BH1750->_bh1750Initialised){
+        if (addr != BH1750_ADDR_LO && addr != BH1750_ADDR_HI)
+        {
+            ESP_LOGE(TAG,"Invalid I2C address");
+            return ESP_ERR_INVALID_ARG;
+        }
+        BH1750->i2c_port=i2c_port;
+        
+        BH1750->_bh1750Initialised = true;
+
+        BH1750_set(BH1750, BH1750->mode, BH1750->res, BH1750->MTime);
+
+        return ESP_OK;
     }
-    BH1750->addr = addr;
-    BH1750->_tcs34725Initialised = true;
-    BH1750->mode = BH1750_MODE_CONTINUOUS;
-    BH1750->res = BH1750_RES_HIGH;
-    BH1750->MTime = MTIME_DEFAULT;
-
-    BH1750->conf.mode = I2C_MODE_MASTER;
-    BH1750->conf.sda_io_num = BH1750_SDA_PIN;
-    BH1750->conf.scl_io_num = BH1750_SCL_PIN;
-    BH1750->conf.sda_pullup_en = GPIO_PULLUP_DISABLE;     //disable if you have external pullup
-    BH1750->conf.scl_pullup_en = GPIO_PULLUP_DISABLE;
-    BH1750->conf.master.clk_speed = 400000;               //I2C Full Speed
-
-    ESP_ERROR_CHECK(i2c_param_config(BH1750_I2C_PORT, &(BH1750->conf))); //set I2C Config
-
-    ESP_ERROR_CHECK(i2c_driver_install(BH1750_I2C_PORT, I2C_MODE_MASTER, 0, 0, 0));
-    
-    BH1750_measure(BH1750,BH1750->mode,BH1750->res,BH1750->MTime);
-    
-    return ESP_OK;
-}
-
-esp_err_t BH1750_delete(){
-    ESP_ERROR_CHECK(i2c_driver_delete(BH1750_I2C_PORT));
-    return ESP_OK;
+    ESP_LOGE(TAG, "BH1750 Already initialised");
+    return ESP_FAIL;
 }
 
 /**
@@ -134,8 +124,13 @@ esp_err_t BH1750_delete(){
  * 
  */
 void BH1750_power_down(ESP32_BH1750 *BH1750)
-{
-    BH1750_write8(BH1750, OPCODE_POWER_DOWN);
+{   
+    if(BH1750->_bh1750Initialised){
+        BH1750_write8(BH1750, OPCODE_POWER_DOWN);
+    }
+    else{
+        ESP_LOGE(TAG, "BH1750 Not initialised");
+    }
 }
 
 /**
@@ -145,20 +140,13 @@ void BH1750_power_down(ESP32_BH1750 *BH1750)
  * 
  */
 void BH1750_power_on(ESP32_BH1750 *BH1750)
-{
-    BH1750_write8(BH1750, OPCODE_POWER_ON);
-}
-
-
-/**
- * @brief Reset bh1750. This function cannot be called when device is powered off.
- *
- * @param ESP_BH1750 BH1750 Structure
- * 
- */
-void BH1750_reset(ESP32_BH1750 *BH1750)
-{
-    BH1750_write8(BH1750, OPCODE_RESET);
+{   
+    if(BH1750->_bh1750Initialised){
+        BH1750_write8(BH1750, OPCODE_POWER_ON);
+    }
+    else{
+        ESP_LOGE(TAG, "BH1750 Not initialised");
+    }
 }
 
 /**
@@ -170,9 +158,30 @@ void BH1750_reset(ESP32_BH1750 *BH1750)
  * 
  */
 void BH1750_set(ESP32_BH1750 *BH1750, bh1750_mode_t mode, bh1750_resolution_t res, uint8_t time){
-    BH1750->mode = mode;
-    BH1750->res = res;
-    BH1750->MTime = time;
+    if(BH1750->_bh1750Initialised){
+        BH1750->mode = mode;
+        BH1750->res = res;
+        BH1750->MTime = time;
+    }
+    else{
+        ESP_LOGE(TAG, "BH1750 Not initialised");
+    }
+}
+
+/**
+ * @brief Reset bh1750. This function cannot be called when device is powered off.
+ *
+ * @param ESP_BH1750 BH1750 Structure
+ * 
+ */
+void BH1750_reset(ESP32_BH1750 *BH1750)
+{
+    if(BH1750->_bh1750Initialised){
+        BH1750_write8(BH1750, OPCODE_RESET);
+    }
+    else{
+        ESP_LOGE(TAG, "BH1750 Not initialised");
+    }
 }
 
 /**
@@ -183,23 +192,44 @@ void BH1750_set(ESP32_BH1750 *BH1750, bh1750_mode_t mode, bh1750_resolution_t re
  * @param resolution Measurement resolution
  * 
  */
-void BH1750_measure(ESP32_BH1750 *BH1750, bh1750_mode_t mode, bh1750_resolution_t resolution, uint8_t time)
+void BH1750_measure(ESP32_BH1750 *BH1750)
 {   
-    //set measurement resolution and mode
-    uint8_t opcode = mode == BH1750_MODE_CONTINUOUS ? OPCODE_CONT : OPCODE_OT;
-    switch (resolution)
-    {
-        case BH1750_RES_LOW:  opcode |= OPCODE_LOW;   break;
-        case BH1750_RES_HIGH: opcode |= OPCODE_HIGH;  break;
-        default:              opcode |= OPCODE_HIGH2; break;
-    }
-    BH1750_write8(BH1750, opcode);
+    if(BH1750->_bh1750Initialised){
 
-    //set measurement time
-    uint8_t MTHigh = OPCODE_MT_HI | (BH1750->MTime >> 5);
-    uint8_t MTLow = OPCODE_MT_LO | (BH1750->MTime & 0x1F);
-    BH1750_write8(BH1750, MTHigh);
-    BH1750_write8(BH1750, MTLow);
+        //set measurement time
+        uint8_t MTHigh = OPCODE_MT_HI | (BH1750->MTime >> 5);
+        uint8_t MTLow = OPCODE_MT_LO | (BH1750->MTime & 0x1F);
+        BH1750_write8(BH1750, MTHigh);
+        BH1750_write8(BH1750, MTLow);
+
+        //set measurement resolution and mode and start measurement
+        if(BH1750->mode==BH1750_MODE_CONTINUOUS){
+            if(BH1750->res==BH1750_RES_HIGH){
+                BH1750_write8(BH1750, OPCODE_CONT_H_RES);
+            }
+            else if(BH1750->res==BH1750_RES_HIGH2){
+                BH1750_write8(BH1750, OPCODE_CONT_H_RES2);
+            }
+            else if(BH1750->res==BH1750_RES_LOW){
+                BH1750_write8(BH1750, OPCODE_CONT_L_RES);
+            }
+        }
+        else{
+            if(BH1750->res==BH1750_RES_HIGH){
+                BH1750_write8(BH1750, OPCODE_OT_H_RES);
+            }
+            else if(BH1750->res==BH1750_RES_HIGH2){
+                BH1750_write8(BH1750, OPCODE_OT_H_RES2);
+            }
+            else if(BH1750->res==BH1750_RES_LOW){
+                BH1750_write8(BH1750, OPCODE_OT_L_RES);
+            }
+        }
+    }
+    else{
+        ESP_LOGE(TAG, "BH1750 Not initialised");
+    }
+    
 }
 
 /**
@@ -210,11 +240,16 @@ void BH1750_measure(ESP32_BH1750 *BH1750, bh1750_mode_t mode, bh1750_resolution_
  * 
  */
 void BH1750_read_measure(ESP32_BH1750 *BH1750, uint16_t *level){
-    uint8_t buffer[2];
-    ESP_ERROR_CHECK(i2c_master_read_from_device(BH1750_I2C_PORT, BH1750->addr, buffer, 2, 1000 / portTICK_PERIOD_MS));
+    if(BH1750->_bh1750Initialised){
+        uint8_t buffer[2];
+        ESP_ERROR_CHECK(i2c_master_read_from_device(BH1750->i2c_port, BH1750->addr, buffer, 2, 1000 / portTICK_PERIOD_MS));
 
-    *level = buffer[0] << 8 | buffer[1];
-    *level = (*level * 10) / 12; // convert to LUX
+        *level = buffer[0] << 8 | buffer[1];
+        *level = (*level * 10) / 12; // convert to LUX
+    }
+    else{
+        ESP_LOGE(TAG, "BH1750 Not initialised");
+    }
 }
 
 /**
@@ -224,41 +259,45 @@ void BH1750_read_measure(ESP32_BH1750 *BH1750, uint16_t *level){
  *  @param level Uint16_t pointer to store measured value
  */
 void BH1750_measure_and_read(ESP32_BH1750* BH1750, uint16_t *level) {
-    uint8_t buffer[2];
-    double wait_time_ms=0;
+    if(BH1750->_bh1750Initialised){
+        uint8_t buffer[2];
+        double wait_time_ms=0;
 
-    if(BH1750->mode == BH1750_MODE_ONE_TIME) {
-        BH1750_power_on(BH1750);
-        BH1750_measure(BH1750,BH1750->mode,BH1750->res,BH1750->MTime);
+        if(BH1750->mode == BH1750_MODE_ONE_TIME) {
+            BH1750_power_on(BH1750);
+            BH1750_measure(BH1750);
+        }
+        else if(BH1750->mode == BH1750_MODE_CONTINUOUS) {
+            BH1750_measure(BH1750);
+        }
+
+        switch (BH1750->res)      //measure times are a bit higher in order to archieve proper measure
+        {
+        case BH1750_RES_LOW:  
+            wait_time_ms = 30.0*(BH1750->MTime/((double)MTIME_DEFAULT));
+            break;
+        case BH1750_RES_HIGH:
+            wait_time_ms = 190.0*(BH1750->MTime/((double)MTIME_DEFAULT));
+            break;
+        case BH1750_RES_HIGH2:
+            wait_time_ms = 190.0*(BH1750->MTime/((double)MTIME_DEFAULT));
+            break;
+        default:
+            wait_time_ms=0;
+            ESP_LOGE(TAG, "bh1750_measure_and_read: Invalid resolution");
+            break;
+        }
+
+        //wait measure time
+        vTaskDelay(wait_time_ms/portTICK_PERIOD_MS);
+
+        //read
+        ESP_ERROR_CHECK(i2c_master_read_from_device(BH1750->i2c_port, BH1750->addr, buffer, 2, 1000 / portTICK_PERIOD_MS));
+
+        *level = buffer[0] << 8 | buffer[1];
+        *level = (*level * 10) / 12; // convert to LUX
     }
-    else if(BH1750->mode == BH1750_MODE_CONTINUOUS) {
-        BH1750_measure(BH1750,BH1750->mode,BH1750->res,BH1750->MTime);
+    else{
+        ESP_LOGE(TAG, "BH1750 Not initialised");
     }
-
-    switch (BH1750->res)      //measure times are a bit higher in order to archieve proper measure
-    {
-    case BH1750_RES_LOW:  
-        wait_time_ms = 30.0*(BH1750->MTime/((double)MTIME_DEFAULT));
-        break;
-    case BH1750_RES_HIGH:
-        wait_time_ms = 190.0*(BH1750->MTime/((double)MTIME_DEFAULT));
-        break;
-    case BH1750_RES_HIGH2:
-        wait_time_ms = 190.0*(BH1750->MTime/((double)MTIME_DEFAULT));
-        break;
-    default:
-        wait_time_ms=0;
-        ESP_LOGE(TAG, "bh1750_measure_and_read: Invalid resolution");
-        break;
-    }
-
-    //wait measure time
-    vTaskDelay(wait_time_ms/portTICK_PERIOD_MS);
-
-    //read
-    ESP_ERROR_CHECK(i2c_master_read_from_device(BH1750_I2C_PORT, BH1750->addr, buffer, 2, 1000 / portTICK_PERIOD_MS));
-
-    *level = buffer[0] << 8 | buffer[1];
-    *level = (*level * 10) / 12; // convert to LUX
-
 }

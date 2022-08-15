@@ -54,10 +54,6 @@
 #define BH1750_ADDR_LO (0x23) //!< I2C address when ADDR pin floating/low
 #define BH1750_ADDR_HI (0x5c) //!< I2C address when ADDR pin high
 
-extern uint8_t BH1750_SDA_PIN;
-extern uint8_t BH1750_SCL_PIN;
-extern uint8_t BH1750_I2C_PORT;
-
 /**
  * Measurement mode
  */
@@ -78,22 +74,21 @@ typedef enum
 } bh1750_resolution_t;
 
 typedef struct{
-  i2c_config_t conf;
-  bool _tcs34725Initialised;
+  uint8_t i2c_port;
+  bool _bh1750Initialised;
+  bool _bh1750Configured;
   bh1750_mode_t mode;
   bh1750_resolution_t res;
   uint8_t addr;
   uint8_t MTime;
-  uint8_t data[2];
 } ESP32_BH1750;
 
-esp_err_t BH1750_init(ESP32_BH1750 *ESP32_BH1750, uint8_t addr);
-esp_err_t BH1750_delete();
+esp_err_t BH1750_init(ESP32_BH1750 *ESP32_BH1750, uint8_t addr, uint8_t i2c_port);
 void BH1750_power_down(ESP32_BH1750 *ESP32_BH1750);
 void BH1750_power_on(ESP32_BH1750 *ESP32_BH1750);
-void BH1750_reset(ESP32_BH1750 *ESP32_BH1750);
 void BH1750_set(ESP32_BH1750 *ESP32_BH1750, bh1750_mode_t mode, bh1750_resolution_t res, uint8_t time);
-void BH1750_measure(ESP32_BH1750 *ESP32_BH1750, bh1750_mode_t mode, bh1750_resolution_t res, uint8_t time);
+void BH1750_reset(ESP32_BH1750 *ESP32_BH1750);
+void BH1750_measure(ESP32_BH1750 *ESP32_BH1750);
 void BH1750_read_measure(ESP32_BH1750 *ESP32_BH1750, uint16_t *level);
 void BH1750_measure_and_read(ESP32_BH1750 *ESP32_BH1750, uint16_t *level);
 
